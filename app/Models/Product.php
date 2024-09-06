@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -21,6 +22,8 @@ class Product extends Model
         'inStock',
         'quantity',
         'price',
+        'brand_id',
+        'category_id',
         'updated_by',
         'created_by',
         'deleted_by'
@@ -41,5 +44,10 @@ class Product extends Model
     public function category() : BelongsTo 
     {
         return $this->belongsTo(Category::class);
-    } 
+    }
+
+    public function product_images() :HasMany
+    {
+        return $this->hasMany(ProductImage::class);
+    }
 }
