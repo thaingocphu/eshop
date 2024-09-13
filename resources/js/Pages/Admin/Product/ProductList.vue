@@ -2,6 +2,28 @@
 import { router, usePage } from '@inertiajs/vue3';
 import { reactive, ref } from 'vue';
 
+import vueFilePond from "vue-filepond";
+import "filepond/dist/filepond.min.css";
+import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
+import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
+import FilePondPluginImagePreview from "filepond-plugin-image-preview";
+import FilePondPluginFilePoster from "filepond-plugin-file-poster";
+
+// Create component
+const FilePond = vueFilePond(
+  FilePondPluginFileValidateType,
+  FilePondPluginImagePreview,
+  FilePondPluginFilePoster
+);
+const handleFilePondLoad = (response) => {
+    const decodeResponse = JSON.parse(response)
+    return decodeResponse
+}
+const handleFilePondRevert = (uniqueId, load, error) => {
+    router.delete(`products/revert-image/${uniqueId}`);
+    load()
+}
+
 const products = usePage().props.products;
 const brands = usePage().props.brands;
 const categories = usePage().props.categories;
@@ -31,7 +53,6 @@ const productData = reactive({
     price: '',
     quantity: '',
     description: '',
-    product_images: [],
     published: '',
     inStock: '',
     category_id: '',
@@ -42,13 +63,7 @@ const productData = reactive({
 const AddProduct = async () => {
     const formData = new FormData();
     for (const key in productData) {
-        if (key == 'product_images') {
-            productData.product_images.forEach((image) => {
-                formData.append('product_images[]', image.raw)
-            })
-        } else {
-            formData.append(key, productData[key])
-        }
+        formData.append(key, productData[key])
     }
 
     try {
@@ -146,6 +161,32 @@ const resetFormData = () => {
 
                     </div>
                 </div>
+
+                <!-- upload images -->
+                <div class="md:gap-6">
+                    <div class="relative z-0 w-full mb-6 group">
+                        <FilePond
+                            name="image"
+                            ref="pond"
+                            v-bind:allow-multiple="true"
+                            accepted-file-types="image/*"
+                            v-bind:server="{
+                                url:'',
+                                timeout:7000,
+                                process:{
+                                    url: 'products/upload-image',
+                                    method: 'POST',
+                                    onload:handleFilePondLoad,
+                                },
+                                revert: handleFilePondRevert,
+                                headers:{
+                                        'X-CSRF-TOKEN': $page.props.csrf_token
+                                },
+                            }"
+                        />
+                    </div>
+                </div>
+                <!-- end upload images -->
                 <div class="flex justify-between">
                     <button @click="dialogVisible = false"
                     class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">Cancel</button>
