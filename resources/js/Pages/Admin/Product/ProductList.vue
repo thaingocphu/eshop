@@ -1,103 +1,15 @@
 <script setup>
-import { router, usePage } from '@inertiajs/vue3';
 import { reactive, ref } from 'vue';
+import Form from '../Components/Form/Form.vue';
+import Table from '../Components/ProductTable/Table.vue';
 
-import vueFilePond from "vue-filepond";
-import "filepond/dist/filepond.min.css";
-import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css";
-import FilePondPluginFileValidateType from "filepond-plugin-file-validate-type";
-import FilePondPluginImagePreview from "filepond-plugin-image-preview";
-import FilePondPluginFilePoster from "filepond-plugin-file-poster";
 defineProps({
     products: Array
 })
 
-const FilePond = vueFilePond(
-    FilePondPluginFileValidateType,
-    FilePondPluginImagePreview,
-    FilePondPluginFilePoster,
-);
-
-const myFiles = ref([]);
-
-const PoductImage = ref([])
-
-
-const handleFilePondInit = () => {
-    console.log(PoductImage.value)
-    if (PoductImage.value.length > 0) {
-        const files = PoductImage.value.map(image => ({
-            source: `/storage/images/products/${image}`,
-            options: {
-                type: 'local',
-                metadata: {
-                    poster: `/storage/images/products/${image}`
-                }
-            }
-        }));
-
-        myFiles.value = files;
-    } else {
-        myFiles.value = [];
-    }
-};
-
-
-const handleFilePondLoad = (response) => {
-    const decodeResponse = JSON.parse(response)
-    productData.product_images.push(decodeResponse)
-    console.log(productData.product_images)
-
-    return decodeResponse
-}
-const handleFilePondRevert = async (uniqueId, load, error) => {
-    productData.product_images = productData.product_images.filter(image => image !== uniqueId)
-    await router.delete(`products/revert-image/${uniqueId}`);
-    load()
-}
-
-const handleFilePondRemove = async (source, load, error) => {
-    const uniqueId = source.replace('/storage/images/products/','')
-    await router.delete(`products/revert-image/${uniqueId}`);
-
-    load()
-}
-
-const brands = usePage().props.brands;
-const categories = usePage().props.categories;
-
-
+const productImage = ref([])
 const dialogVisible = ref(false)
-const isAddProduct = ref(false)
 const editMode = ref(false)
-
-const openAddModal = () => {
-    dialogVisible.value = true
-    isAddProduct.value = true
-    editMode.value = false
-
-    resetFormData();
-}
-
-const openEditModal = (product) => {
-    editMode.value = true
-    dialogVisible.value = true
-    isAddProduct.value = false
-
-    productData.id = product.id;
-    productData.title = product.title;
-    productData.price = product.price;
-    productData.quantity = product.quantity;
-    for(let i = 0; i < product.product_images.length; i++ ){
-        PoductImage.value.push(product.product_images[i].image)
-    }
-    productData.published = product.published;
-    productData.inStock = product.inStock;
-    productData.category_id = product.category_id;
-    productData.brand_id = product.brand_id;
-    productData.description = product.description;
-
-}
 
 const productData = reactive({
     id: '',
@@ -113,205 +25,53 @@ const productData = reactive({
 
 })
 
-const AddProduct = async () => {
-    const formData = new FormData();
-    for (const key in productData) {
-        if(key == "product_images"){
-            for(let i = 0 ; i < productData.product_images.length; i++){
-                formData.append('product_images[]', productData.product_images[i])
-            }
-        }else{
-            formData.append(key, productData[key])
-        }
-    }
-    try {
-        await router.post('products/store', formData, {
-            onSuccess: (page) => {
-                Swal.fire({
-                    toast: true,
-                    icon: 'success',
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    title: page.props.flash.success
-                })
-                dialogVisible.value = false;
-                resetFormData();
-            }
-        })
-    } catch (err) {
-        console.log(err)
-    }
-}
-
-const UpdateProduct = async () => {
-    const formData = new FormData();
-    for (const key in productData) {
-        if(key == "product_images"){
-            for(let i = 0 ; i < productData.product_images.length; i++){
-                formData.append('product_images[]', productData.product_images[i])
-            }
-        }else{
-            formData.append(key, productData[key])
-        }
-    }
-    formData.append('_method', 'PUT')
-
-    try {
-        await router.post(`products/update/${productData.id}`, formData, {
-            onSuccess: (page) => {
-                Swal.fire({
-                    toast: true,
-                    icon: 'success',
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    title: page.props.flash.success
-                })
-                dialogVisible.value = false;
-            }
-        })
-    } catch (err) {
-        console.log(err)
-    }
-}
-
-const deleteProduct = (product) => {
-    Swal.fire({
-        title: 'Do you want to delete product?',
-        text: 'This action can not undo',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
-    }).then((result) => {
-        if (result.isConfirmed) {
-            try {
-                router.delete(`products/destroy/${product.id}`)
-            } catch (err) {
-                console.log(err)
-            }
-        }
-    })
-}
-
 const resetFormData = () => {
-    productData.id = '';
-    productData.title = '';
-    productData.price = '';
-    productData.quantity = '';
-    productData.product_images = [];
-    productData.published = '';
-    productData.inStock = '';
-    productData.category_id = '';
-    productData.brand_id = '';
-    productData.description = '';
+    for (const key in productData) {
+        if (key == "product_images") {
+            productData[key] = []
+
+        } else {
+            productData[key] = ''
+        }
+    }
 }
+
+const openAddModal = () => {
+    dialogVisible.value = true
+    editMode.value = false
+    productImage.value = []
+
+
+    resetFormData();
+}
+
+const openEditModal = (product) => {
+    editMode.value = true
+    dialogVisible.value = true
+    productImage.value=[]
+
+
+    productData.id = product.id;
+    productData.title = product.title;
+    productData.price = product.price;
+    productData.quantity = product.quantity;
+    for(let i = 0; i < product.product_images.length; i++ ){
+        productImage.value.push(product.product_images[i].image)
+    }
+    productData.published = product.published;
+    productData.inStock = product.inStock;
+    productData.category_id = product.category_id;
+    productData.brand_id = product.brand_id;
+    productData.description = product.description;
+}
+
 </script>
 
 <template>
     <section class="bg-gray-50 dark:bg-gray-900 p-3 sm:p-5">
         <!-- dialog adding product-->
-        <el-dialog v-model="dialogVisible" :title="editMode ? 'Edit Product' : 'Add Product'" width="500"
-            :before-close="handleClose">
-            <!-- start form -->
-            <form @submit.prevent="editMode ? UpdateProduct() : AddProduct()" class="max-w-md mx-auto">
-                <div class="relative z-0 w-full mb-5 group">
-                    <input v-model="productData.title" type="text" name="floating_title" id="floating_title"
-                        class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                        placeholder=" " required />
-                    <label for="floating_title"
-                        class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Title
-                    </label>
-                </div>
-                <div class="relative z-0 w-full mb-5 group">
-                    <input v-model="productData.price" type="text" name="floating_price" id="floating_price"
-                        class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                        placeholder=" " required />
-                    <label for="floating_price"
-                        class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Price
-                    </label>
-                </div>
-                <div class="relative z-0 w-full mb-5 group">
-                    <input v-model="productData.quantity" type="number" name="quantity" id="floating_quantity"
-                        class="block py-2.5 px-0 w-full text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-                        placeholder=" " required />
-                    <label for="floating_quantity"
-                        class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-6 scale-75 top-3 -z-10 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-6">Quantity
-                    </label>
-                </div>
-
-                <!-- select category -->
-                <label for="countries_multiple"
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category</label>
-                <select v-model="productData.category_id" id="countries_multiple"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                    <option value="" selected disabled>Choose category</option>
-                    <option v-for="category in categories" :key="category.id" :value="category.id">{{ category.name }}
-                    </option>
-                </select>
-                <!-- end select category -->
-
-                <!-- select brand -->
-                <label for="countries_multiple"
-                    class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Category</label>
-                <select v-model="productData.brand_id" id="countries_multiple"
-                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                    <option value="" selected disabled>Choose Brand</option>
-                    <option v-for="brand in brands" :key="brand.id" :value="brand.id">{{ brand.name }}</option>
-                </select>
-                <!-- end select brand -->
-
-                <div class="md:gap-6">
-                    <div class="relative z-0 w-full mb-6 group">
-
-                        <label for="message"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Description</label>
-                        <textarea v-model="productData.description" id="message" rows="4"
-                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                            placeholder="Leave a comment..."></textarea>
-
-                    </div>
-                </div>
-
-                <!-- upload images -->
-                <div class="md:gap-6">
-                    <div class="relative z-0 w-full mb-6 group">
-                        <FilePond 
-                            name="image" 
-                            ref="pond" 
-                            v-bind:allow-multiple="true"
-                            accepted-file-types="image/*"
-                            v-bind:files="myFiles"
-                            v-on:init="handleFilePondInit()"
-                            v-bind:server="{
-                                url: '',
-                                timeout: 7000,
-                                process: {
-                                    url: 'products/upload-image',
-                                    method: 'POST',
-                                    onload: handleFilePondLoad,
-                                },
-                                remove: handleFilePondRemove,
-                                revert: handleFilePondRevert,
-                                headers: {
-                                    'X-CSRF-TOKEN': $page.props.csrf_token
-                                },
-                            }" />
-                    </div>
-                </div>
-                <!-- end upload images -->
-                <div class="flex justify-between">
-                    <button @click="dialogVisible = false"
-                        class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">Cancel</button>
-
-                    <button type="submit"
-                        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
-
-                </div>
-            </form>
-
-            <!-- end form -->
+        <el-dialog v-model="dialogVisible" :title="editMode ? 'Edit Product' : 'Add Product'" width="500">
+            <Form :dialogVisible :editMode :productData :productImage @updateVisible="dialogVisible = false" />
         </el-dialog>
         <!-- end dialog adding product -->
 
@@ -402,112 +162,13 @@ const resetFormData = () => {
                                             class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Apple
                                             (56)</label>
                                     </li>
-                                    <li class="flex items-center">
-                                        <input id="fitbit" type="checkbox" value=""
-                                            class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                        <label for="fitbit"
-                                            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Microsoft
-                                            (16)</label>
-                                    </li>
-                                    <li class="flex items-center">
-                                        <input id="razor" type="checkbox" value=""
-                                            class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                        <label for="razor"
-                                            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Razor
-                                            (49)</label>
-                                    </li>
-                                    <li class="flex items-center">
-                                        <input id="nikon" type="checkbox" value=""
-                                            class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                        <label for="nikon"
-                                            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">Nikon
-                                            (12)</label>
-                                    </li>
-                                    <li class="flex items-center">
-                                        <input id="benq" type="checkbox" value=""
-                                            class="w-4 h-4 bg-gray-100 border-gray-300 rounded text-primary-600 focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-700 focus:ring-2 dark:bg-gray-600 dark:border-gray-500">
-                                        <label for="benq"
-                                            class="ml-2 text-sm font-medium text-gray-900 dark:text-gray-100">BenQ
-                                            (74)</label>
-                                    </li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                            <tr>
-                                <th scope="col" class="px-4 py-3">Product name</th>
-                                <th scope="col" class="px-4 py-3">Category</th>
-                                <th scope="col" class="px-4 py-3">Brand</th>
-                                <th scope="col" class="px-4 py-3">Quantity</th>
-                                <th scope="col" class="px-4 py-3">Price</th>
-                                <th scope="col" class="px-4 py-3">Stock</th>
-                                <th scope="col" class="px-4 py-3">Publish</th>
-                                <th scope="col" class="px-4 py-3">
-                                    <span class="sr-only">Actions</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(product, index) in products" :key="product.id"
-                                class="border-b dark:border-gray-700">
-                                <th scope="row"
-                                    class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{
-                                        product.title }}</th>
-                                <td class="px-4 py-3">{{ product.category.name }}</td>
-                                <td class="px-4 py-3">{{ product.brand.name }}</td>
-                                <td class="px-4 py-3">{{ product.quantity }}</td>
-                                <td class="px-4 py-3">{{ product.price }}</td>
-                                <td class="px-4 py-3">
-                                    <span v-if="product.inStock == 0"
-                                        class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-red-400 border border-red-400">Out
-                                        of stock</span>
-                                    <span v-else
-                                        class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-green-400 border border-green-400">in
-                                        stock</span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <button v-if="product.published == 1" ype="button"
-                                        class="px-3 py-2 text-xs font-medium text-center text-white bg-green-700 rounded-lg hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Published</button>
-                                    <button v-else type="button"
-                                        class="px-3 py-2 text-xs font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">Private
-                                    </button>
-                                </td>
-                                <td class="px-4 py-3 flex items-center justify-end">
-                                    <button :id="`${product.id}-button`" :data-dropdown-toggle="`${product.id}`"
-                                        class="inline-flex items-center p-0.5 text-sm font-medium text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:text-gray-100"
-                                        type="button">
-                                        <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewbox="0 0 20 20"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                                        </svg>
-                                    </button>
-                                    <div :id="`${product.id}`"
-                                        class="hidden z-10 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
-                                        <ul class="py-1 text-sm text-gray-700 dark:text-gray-200"
-                                            :aria-labelledby="`${product.id}-button`">
-                                            <li>
-                                                <a href="#"
-                                                    class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Show</a>
-                                            </li>
-                                            <li>
-                                                <button @click="openEditModal(product)"
-                                                    class="block py-2 px-4 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Edit</button>
-                                            </li>
-                                        </ul>
-                                        <div class="py-1">
-                                            <a href="#" @click="deleteProduct(product, index)"
-                                                class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Delete</a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <Table :products  @openEditModel="openEditModal" />
                 </div>
                 <nav class="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4"
                     aria-label="Table navigation">
@@ -536,14 +197,6 @@ const resetFormData = () => {
                         </li>
                         <li>
                             <a href="#"
-                                class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">2</a>
-                        </li>
-                        <li>
-                            <a href="#" aria-current="page"
-                                class="flex items-center justify-center text-sm z-10 py-2 px-3 leading-tight text-primary-600 bg-primary-50 border border-primary-300 hover:bg-primary-100 hover:text-primary-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">3</a>
-                        </li>
-                        <li>
-                            <a href="#"
                                 class="flex items-center justify-center text-sm py-2 px-3 leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">...</a>
                         </li>
                         <li>
@@ -566,5 +219,5 @@ const resetFormData = () => {
                 </nav>
             </div>
         </div>
-            </section>
+    </section>
 </template>
