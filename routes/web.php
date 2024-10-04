@@ -4,20 +4,13 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 //user router
-
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
-});
+Route::get('/', [UserController::class, 'index'])->name('user.home');
 
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
@@ -27,6 +20,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// add to cart
+Route::prefix('cart')->controller(CartController::class)->group(function() {
+    Route::get('view', 'view')->name('cart.view');
+    Route::post('store/{product}', 'store')->name('cart.store');
+    Route::patch('update/{product}', 'update')->name('cart.update');
+    Route::delete('delete/{product}', 'delete')->name('cart.delete');
 });
 
 //admin router
@@ -40,7 +41,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function(){
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/products', [ProductController::class, 'index'])->name('admin.products.index');
     Route::post('products/upload-image', [ProductController::class, 'uploadImage'])->name('admin.products.upload-image');
-    Route::delete('products/revert-image/{fileName}', [ProductController::class, 'revertImage'])->name('admin.products.revert-image');
+    Route::delete('products/revert-image/{uniqueId}', [ProductController::class, 'revertImage'])->name('admin.products.revert-image');
     Route::post('products/store', [ProductController::class, 'store'])->name('admin.products.store');
     Route::put('products/update/{id}', [ProductController::class, 'update'])->name('admin.products.update');
     Route::delete('products/destroy/{id}', [ProductController::class, 'destroy'])->name('admin.products.destroy');

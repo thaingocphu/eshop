@@ -2,9 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Helper\Cart;
+use App\Http\Resources\CartResource;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
+use Illuminate\Foundation\Application;
+
 
 class HandleInertiaRequests extends Middleware
 {
@@ -35,6 +39,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
@@ -42,11 +47,22 @@ class HandleInertiaRequests extends Middleware
                 'infor' => fn() => $request->session()->get('infor'),
 
             ],
-            'ziggy' => function() use ($request){
-                return array_merge((new Ziggy)->toArray(), [
-                    'location' => $request->url(),
-                ]);
-            },
+
+            'ziggy' => fn() =>[
+                (new Ziggy)->toArray(),
+                'location' => $request->url()
+            ],
+
+            'cart' => new CartResource(Cart::getProductsAndCartItems()),
+
+            'canLogin' => app('router')->has('login'),
+
+            'canRegister' => app('router')->has('register'),
+
+            'laravelVersion' => Application::VERSION,
+
+            'phpVersion' => PHP_VERSION,
+            
             'csrf_token' => csrf_token()
         ];
     }

@@ -25,12 +25,12 @@ const myFiles = ref([]);
 const handleFilePondInit = () => {
     console.log(productImage)
     if (productImage.length > 0) {
-        const files = productImage.map(image => ({
-            source: `/storage/images/products/${image}`,
+        const files = productImage.map(imagePath => ({
+            source: `${imagePath}`,
             options: {
                 type: 'local',
                 metadata: {
-                    poster: `/storage/images/products/${image}`
+                    poster: `${imagePath}`
                 }
             }
         }));
@@ -43,18 +43,19 @@ const handleFilePondInit = () => {
 
 const handleFilePondLoad = (response) => {
     const decodeResponse = JSON.parse(response)
-    productData.product_images.push(decodeResponse)
+    productData.product_images.push(atob(decodeResponse))
     return decodeResponse
 }
 
 const handleFilePondRevert = async (uniqueId, load, error) => {
+    console.log('hello', uniqueId)
     productData.product_images = productData.product_images.filter(image => image !== uniqueId)
     await router.delete(`products/revert-image/${uniqueId}`);
     load()
 }
 
 const handleFilePondRemove = async (source, load, error) => {
-    const uniqueId = source.replace('/storage/images/products/', '')
+    const uniqueId = btoa(source)
     await router.delete(`products/revert-image/${uniqueId}`);
 
     load()
