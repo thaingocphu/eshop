@@ -34,7 +34,7 @@ class ProductController extends Controller
                 $image = $request->file('image');
                 $fileName = uniqid('product-', true) . '.' . $image->getClientOriginalExtension();
                 $image->storeAs('/images/products', $fileName);
-                return response()->json($fileName);
+                return response()->json(base64_encode('/storage/images/products/'. $fileName));
             }
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failled to upload Image: ' . $e->getMessage()]);
@@ -42,12 +42,14 @@ class ProductController extends Controller
 
     }
 
-    public function revertImage($fileName)
+    public function revertImage($uniqueId)
     {
 
+        $path= base64_decode($uniqueId);
+
         try {
-            Storage::delete('images/products/' . $fileName);
-            ProductImage::where( 'image', $fileName)->delete();
+            Storage::delete( str_replace("/storage","", $path ));
+            ProductImage::where( 'image', $path)->delete();
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'fail to revert image: ' . $e->getMessage()]);
         }

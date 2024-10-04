@@ -30,17 +30,21 @@ const rules = computed(() => {
 
 const v$ = useVuelidate(rules, productData)
 
-async function handleSubmit() {
-    const result = await v$.value.$validate()
-    if (!result) {
-        console.log("form error!!!")
-        return
-    } else {
-        if (editMode) {
-            await UpdateProduct()
+const handleSubmit = async () => {
+    try {
+        const result = await v$.value.$validate()
+        if (!result) {
+            console.log("form error!!!")
+            return
         } else {
-            await AddProduct()
+            if (editMode) {
+                await UpdateProduct()
+            } else {
+                await AddProduct()
+            }
         }
+    } catch (err) {
+        console.log(err)
     }
 }
 
